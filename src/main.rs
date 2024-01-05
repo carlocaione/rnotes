@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use clap::{Args, Parser, Subcommand};
 use colored::Colorize;
 use directories::UserDirs;
@@ -80,7 +80,7 @@ impl Default for Config {
     }
 }
 
-fn do_ls(notes: &HashMap<String, PathBuf>) -> ! {
+fn do_ls(notes: &HashMap<String, PathBuf>) {
     let mut sorted: Vec<_> = notes.iter().collect();
 
     sorted.sort_by_key(|k| k.0);
@@ -89,8 +89,6 @@ fn do_ls(notes: &HashMap<String, PathBuf>) -> ! {
     for (note, _) in sorted {
         println!("{}", note.bold());
     }
-
-    std::process::exit(exitcode::OK);
 }
 
 fn _cmd<P, N>(cmd: &str, path: P, note: N) -> Result<()>
@@ -136,8 +134,7 @@ fn do_cmd(
     if let Some(n) = notes.get(note_name) {
         _cmd(cmd, &cfg.notes_dir, &n)?;
     } else {
-        eprintln!("{note_name} not found");
-        std::process::exit(exitcode::UNAVAILABLE);
+        bail!("{} not found", note_name);
     }
 
     Ok(())
@@ -195,7 +192,7 @@ fn build_notes(cfg: &Config) -> Result<HashMap<String, PathBuf>> {
     Ok(m)
 }
 
-fn do_print_config(cfg: &Config) -> ! {
+fn do_print_config(cfg: &Config) {
     println!("");
     println!(
         "Configuration file: \t{}",
@@ -208,8 +205,6 @@ fn do_print_config(cfg: &Config) -> ! {
     println!("Editor: \t\t{}", cfg.editor.bold());
     println!("Viewer: \t\t{}", cfg.viewer.bold());
     println!("Notes extension: \t{}", cfg.extension.bold());
-
-    std::process::exit(exitcode::OK);
 }
 
 fn main() -> Result<()> {
@@ -218,6 +213,7 @@ fn main() -> Result<()> {
 
     if cli.conf {
         do_print_config(&cfg);
+        return Ok(());
     }
 
     let notes = build_notes(&cfg)?;
